@@ -52,6 +52,7 @@ def request_advice():
     return get_agent_advice()
 
 with gr.Blocks() as demo:
+    
     with gr.Row():
         with gr.Column(scale=1):
             todo_list = gr.Textbox(label="Family To-Do List", value=get_todo_list(), lines=10)
@@ -72,10 +73,21 @@ with gr.Blocks() as demo:
             bulletin_board = gr.Textbox(label="Family Bulletin Board", value=get_bulletin_board(), lines=10)
             bulletin_input = gr.Textbox(label="Add Bulletin Item")
             bulletin_button = gr.Button("Add Bulletin")
-
+    
     agent_responses = gr.Textbox(label="Agent Responses & Recommendations", lines=5)
     advice_button = gr.Button("Any advice?")
 
+    with gr.Row():
+        with gr.Column(scale=2):
+            gr.Image("logo.png", show_label=False, height=100)
+        with gr.Column(scale=2):
+            gr.Markdown(
+                """
+                # Worlds In-Silico Family Assistant
+                ### Connecting Intelligent Worlds, Empowering Real Lives
+                """
+            )
+            
     # Connect components
     process_button.click(
         process_multimodal, 
