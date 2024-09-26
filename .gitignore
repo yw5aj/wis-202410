@@ -1,0 +1,5 @@
+.env
+*.pyc
+openapi*.json
+image_summaries/*
+stored_images/*
