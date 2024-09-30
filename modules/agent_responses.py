@@ -1,9 +1,32 @@
-def get_agent_response(user_input):
-    # This is a placeholder function. In a real implementation,
-    # you would process the user input and generate a response.
-    return f"Agent response to: {user_input}"
+from letta import LocalClient, LettaMessage
+from modules.user_management import get_user_agent_id
 
-def get_agent_advice():
-    # This is a placeholder function. In a real implementation,
-    # you would generate advice based on the current context or state.
-    return "Here's some advice: Remember to take breaks and stay hydrated!"
+letta_client = LocalClient()
+
+def get_agent_response(input_text, username):
+    agent_id = get_user_agent_id(username)
+    if agent_id:
+        response = letta_client.user_message(
+            agent_id=agent_id,
+            message=input_text,
+        )
+        # Extract the content from the response
+        for message in response.messages:
+            if isinstance(message, LettaMessage) and message.type == 'user_message':
+                return message.content
+        return "No user message found in the response"
+    return "Error: User agent not found"
+
+def get_agent_advice(username):
+    agent_id = get_user_agent_id(username)
+    if agent_id:
+        response = letta_client.send_message(
+            agent_id=agent_id,
+            message="Can you provide some advice?",
+        )
+        # Extract the content from the response
+        for message in response.messages:
+            if isinstance(message, LettaMessage) and message.type == 'user_message':
+                return message.content
+        return "No user message found in the response"
+    return "Error: User agent not found"
