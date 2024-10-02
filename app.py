@@ -37,8 +37,8 @@ def process_multimodal(audio, image, model_choice, current_input):
     
     return combined_input
 
-def submit_to_agent(input_text, username):
-    agent_response = get_agent_response(input_text, username)
+def submit_to_agent(input_text, username, show_details):
+    agent_response = get_agent_response(input_text, username, detailed=show_details)
     return agent_response
 
 def update_todo(todo_item):
@@ -49,8 +49,8 @@ def update_bulletin(bulletin_item):
     add_bulletin_item(bulletin_item)
     return get_bulletin_board()
 
-def request_advice(username):
-    return get_agent_advice(username)
+def request_advice(username, show_details):
+    return get_agent_advice(username, detailed=show_details)
 
 def login(username, password):
     if authenticate(username, password):
@@ -93,6 +93,7 @@ with gr.Blocks() as demo:
                                         label="Choose Model", 
                                         value="gpt-4o-mini")
                 input_box = gr.Textbox(label="Input", lines=5)
+                show_details = gr.Checkbox(label="Show agent thought process", value=False)
                 with gr.Row():
                     process_button = gr.Button("Process Multimodal Input")
                     submit_button = gr.Button("Submit to Agent")
@@ -124,15 +125,15 @@ with gr.Blocks() as demo:
         )
         submit_button.click(
             submit_to_agent, 
-            inputs=[input_box, current_user], 
+            inputs=[input_box, current_user, show_details], 
             outputs=agent_responses
         )
         todo_button.click(update_todo, todo_input, todo_list)
         bulletin_button.click(update_bulletin, bulletin_input, bulletin_board)
-        advice_button.click(request_advice, inputs=[current_user], outputs=agent_responses)
+        advice_button.click(request_advice, inputs=[current_user, show_details], outputs=agent_responses)
         
         # Connect login components
         login_button.click(login, inputs=[username_input, password_input], outputs=[login_output, user_data, current_user])
         register_button.click(register, inputs=[username_input, password_input], outputs=login_output)
 
-demo.launch()
+demo.launch(share=True)
