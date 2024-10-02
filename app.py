@@ -37,9 +37,10 @@ def process_multimodal(audio, image, model_choice, current_input):
     
     return combined_input
 
-def submit_to_agent(input_text, username, show_details):
+def submit_to_agent(input_text, username, show_details, history):
     agent_response = get_agent_response(input_text, username, detailed=show_details)
-    return agent_response
+    history.append((input_text, agent_response))
+    return "", history  # Return empty string to clear input box
 
 def update_todo(todo_item):
     add_todo_item(todo_item)
@@ -49,8 +50,10 @@ def update_bulletin(bulletin_item):
     add_bulletin_item(bulletin_item)
     return get_bulletin_board()
 
-def request_advice(username, show_details):
-    return get_agent_advice(username, detailed=show_details)
+def request_advice(username, show_details, history):
+    advice = get_agent_advice(username, detailed=show_details)
+    history.append(("Can you provide some advice?", advice))
+    return history
 
 def login(username, password):
     if authenticate(username, password):
@@ -68,6 +71,7 @@ with gr.Blocks() as demo:
     gr.Markdown("# Worlds In-Silico Family Assistant")
     
     current_user = gr.State(value="")
+    chat_history = gr.State([])
 
     with gr.Tab("Login"):
         username_input = gr.Textbox(label="Username")
@@ -103,7 +107,7 @@ with gr.Blocks() as demo:
                 bulletin_input = gr.Textbox(label="Add Bulletin Item")
                 bulletin_button = gr.Button("Add Bulletin")
         
-        agent_responses = gr.Textbox(label="Agent Responses & Recommendations", lines=5)
+        agent_responses = gr.Chatbot(label="Conversation History")
         advice_button = gr.Button("Any advice?")
 
         with gr.Row():
@@ -125,12 +129,12 @@ with gr.Blocks() as demo:
         )
         submit_button.click(
             submit_to_agent, 
-            inputs=[input_box, current_user, show_details], 
-            outputs=agent_responses
+            inputs=[input_box, current_user, show_details, chat_history], 
+            outputs=[input_box, agent_responses]
         )
         todo_button.click(update_todo, todo_input, todo_list)
         bulletin_button.click(update_bulletin, bulletin_input, bulletin_board)
-        advice_button.click(request_advice, inputs=[current_user, show_details], outputs=agent_responses)
+        advice_button.click(request_advice, inputs=[current_user, show_details, chat_history], outputs=agent_responses)
         
         # Connect login components
         login_button.click(login, inputs=[username_input, password_input], outputs=[login_output, user_data, current_user])
