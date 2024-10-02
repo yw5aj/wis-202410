@@ -89,7 +89,9 @@ with gr.Blocks() as demo:
                 with gr.Row():
                     voice_input = gr.Audio(type="filepath", label="Voice Input")
                     image_input = gr.Image(label="Image Input", type="filepath")
-                model_choice = gr.Radio(["gpt-4o", "claude-3-5-sonnet-20240620"], label="Choose Model", value="gpt-4o")
+                model_choice = gr.Radio(["gpt-4o-mini", "gpt-4o", "claude-3-5-sonnet-20240620"], 
+                                        label="Choose Model", 
+                                        value="gpt-4o-mini")
                 input_box = gr.Textbox(label="Input", lines=5)
                 with gr.Row():
                     process_button = gr.Button("Process Multimodal Input")

@@ -26,7 +26,7 @@ def get_mime_type(file_path):
     mime_type, _ = mimetypes.guess_type(file_path)
     return mime_type or "application/octet-stream"
 
-def summarize_image(image_path, model="claude-3-5-sonnet-20240620"):
+def summarize_image(image_path, model="gpt-4o-mini"):
     # Generate a unique ID for the image
     image_id = str(uuid.uuid4())
     
@@ -40,12 +40,12 @@ def summarize_image(image_path, model="claude-3-5-sonnet-20240620"):
     # Get the MIME type of the image
     mime_type = get_mime_type(image_path)
     
-    if model == "gpt-4o":
-        summary = summarize_with_gpt4o(base64_image, mime_type)
+    if model in ["gpt-4o-mini", "gpt-4o"]:
+        summary = summarize_with_gpt(base64_image, mime_type, model)
     elif model == "claude-3-5-sonnet-20240620":
         summary = summarize_with_claude(base64_image, mime_type)
     else:
-        raise ValueError("Unsupported model. Choose 'gpt-4o' or 'claude-3-5-sonnet-20240620'.")
+        raise ValueError("Unsupported model. Choose 'gpt-4o-mini', 'gpt-4o', or 'claude-3-5-sonnet-20240620'.")
     
     # Save the image to the file system
     new_image_path = IMAGE_DIR / f"{image_id}{Path(image_path).suffix}"
@@ -64,10 +64,10 @@ def summarize_image(image_path, model="claude-3-5-sonnet-20240620"):
         "summary": summary,
     }
 
-def summarize_with_gpt4o(base64_image, mime_type):
+def summarize_with_gpt(base64_image, mime_type, model):
     try:
         response = openai_client.chat.completions.create(
-            model="gpt-4o",
+            model=model,
             messages=[
                 {
                     "role": "user",
@@ -86,7 +86,7 @@ def summarize_with_gpt4o(base64_image, mime_type):
         )
         return response.choices[0].message.content
     except Exception as e:
-        return f"Error processing image with GPT-4: {str(e)}"
+        return f"Error processing image with {model}: {str(e)}"
 
 def summarize_with_claude(base64_image, mime_type):
     try:
