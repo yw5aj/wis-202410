@@ -1,6 +1,7 @@
 .env
 *.pyc
 openapi*.json
+users.json
 image_summaries/*
 stored_images/*
 *.code-workspace

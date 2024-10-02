@@ -17,7 +17,7 @@ def get_agent_response(input_text, username, detailed=False):
 def get_agent_advice(username, detailed=False):
     agent_id = get_user_agent_id(username)
     if agent_id:
-        response = letta_client.send_message(
+        response = letta_client.user_message(
             agent_id=agent_id,
             message="Can you provide some advice?",
         )
