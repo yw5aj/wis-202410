@@ -4,7 +4,7 @@ from modules.image_processing import summarize_image
 from modules.todo_list import add_todo_item, get_todo_list
 from modules.bulletin_board import add_bulletin_item, get_bulletin_board
 from modules.agent_responses import get_agent_response, get_agent_advice
-from modules.user_management import authenticate, register_user, get_user_data
+from modules.user_management import authenticate, register_user, get_user_data, get_user_group, get_group_agent_id, ensure_group_agent_exists, load_users
 
 import os
 from pathlib import Path
@@ -57,15 +57,27 @@ def request_advice(username, show_details, history):
 
 def login(username, password):
     if authenticate(username, password):
-        return f"Welcome, {username}!", get_user_data(username), username
+        group = get_user_group(username)
+        group_agent_id = ensure_group_agent_exists(group) if group else None
+        return f"Welcome, {username}!", get_user_data(username), username, group, group_agent_id
     else:
-        return "Invalid username or password", "", ""
+        return "Invalid username or password", "", "", "", ""
 
-def register(username, password):
-    if register_user(username, password):
-        return f"User {username} registered successfully!"
+def register(username, password, group):
+    if register_user(username, password, group):
+        group_agent_id = get_group_agent_id(group)
+        return f"User {username} registered successfully in group {group}! Group Agent ID: {group_agent_id}"
     else:
         return "Username already exists. Please choose a different one."
+
+def update_all_groups():
+    users = load_users()
+    unique_groups = set(user_data.get('group') for user_data in users.values() if user_data.get('group'))
+    for group in unique_groups:
+        ensure_group_agent_exists(group)
+
+# Call this function once when the app starts
+update_all_groups()
 
 with gr.Blocks() as demo:
     gr.Markdown("# Worlds In-Silico Family Assistant")
@@ -76,12 +88,15 @@ with gr.Blocks() as demo:
     with gr.Tab("Login"):
         username_input = gr.Textbox(label="Username")
         password_input = gr.Textbox(label="Password", type="password")
+        group_input = gr.Textbox(label="Group (for registration)")
         login_button = gr.Button("Login")
         register_button = gr.Button("Register")
         login_output = gr.Textbox(label="Login Status")
     
     with gr.Tab("Main Interface"):
         user_data = gr.Textbox(label="User Data")
+        user_group = gr.Textbox(label="User Group")
+        group_agent_id = gr.Textbox(label="Group Agent ID")
         
         with gr.Row():
             with gr.Column(scale=1):
@@ -137,7 +152,7 @@ with gr.Blocks() as demo:
         advice_button.click(request_advice, inputs=[current_user, show_details, chat_history], outputs=agent_responses)
         
         # Connect login components
-        login_button.click(login, inputs=[username_input, password_input], outputs=[login_output, user_data, current_user])
-        register_button.click(register, inputs=[username_input, password_input], outputs=login_output)
+        login_button.click(login, inputs=[username_input, password_input], outputs=[login_output, user_data, current_user, user_group, group_agent_id])
+        register_button.click(register, inputs=[username_input, password_input, group_input], outputs=login_output)
 
 demo.launch(share=True)
