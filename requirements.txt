@@ -1,4 +1,5 @@
-gradio==4.19.2
-openai==1.12.0
-anthropic==0.18.1
-python-dotenv==1.0.1
+gradio
+openai
+anthropic
+python-dotenv
+letta
