@@ -69,7 +69,7 @@ def create_or_update_group_bulletin(group_name, group_agent_id, new_item=None):
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant tasked with creating a concise and informative bulletin board for a group."},
-            {"role": "user", "content": f"Based on the following information about group members and any new item, create a concise and informative bulletin board for the group. If there's a new item, make sure to incorporate it prominently:\n\n{bulletin_content}"}
+            {"role": "user", "content": f"Based on the following information about group members and any new item, create a concise and informative bulletin board for the group. Follow these guidelines:\n\n1. Limit to 2 items per user\n2. Balance the content between users so that they get roughly equal amounts of items\n3. If there's a new item, make sure to incorporate it prominently\n4. Prioritize recent and important information\n\nHere's the content to work with:\n\n{bulletin_content}"}
         ]
     )
 

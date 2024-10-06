@@ -55,11 +55,17 @@ def create_or_update_todo_list(group_name, group_agent_id, new_item=None):
         model="gpt-4o-mini",
         messages=[
             {"role": "system", "content": "You are a helpful assistant tasked with creating and managing a to-do list for a group."},
-            {"role": "user", "content": f"Based on the following information about group members and any new item, create a concise and organized to-do list for the group. If there's a new item, make sure to incorporate it. Format the list with bullet points and group similar tasks together:\n\n{todo_content}"}
+            {"role": "user", "content": f"Based on the following information about group members and any new item, create a concise and organized to-do list for the group. The list should contain no more than 10 items total. If there's a new item, make sure to incorporate it. Prioritize the most important and urgent tasks. Format each item as a Markdown checkbox, like this: '- [ ] Task description'. Group similar tasks together:\n\n{todo_content}"}
         ]
     )
 
-    return response.choices[0].message.content
+    todo_list = response.choices[0].message.content
+    
+    # Ensure the todo list starts with a header
+    if not todo_list.startswith("##"):
+        todo_list = f"## To-Do List for {group_name}\n\n" + todo_list
+
+    return todo_list
 
 def add_todo_item(item, group_name, group_agent_id):
     return create_or_update_todo_list(group_name, group_agent_id, new_item=item)

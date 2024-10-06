@@ -103,7 +103,7 @@ with gr.Blocks() as demo:
         
         with gr.Row():
             with gr.Column(scale=1):
-                todo_list = gr.Markdown(label="Family To-Do List", value="")
+                todo_list = gr.Markdown(label="Family To-Do List")
                 todo_input = gr.Textbox(label="Add Todo Item")
                 todo_button = gr.Button("Update To-Do List")
 
@@ -175,7 +175,7 @@ with gr.Blocks() as demo:
 
         # Update todo list on login
         login_button.click(
-            lambda group, agent_id: f"## {group} To-Do List\n\n{get_todo_list(group, agent_id)}" if group and agent_id else "",
+            lambda group, agent_id: get_todo_list(group, agent_id) if group and agent_id else "",
             inputs=[user_group, group_agent_id],
             outputs=todo_list
         )
