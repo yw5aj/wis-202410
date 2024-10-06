@@ -42,9 +42,9 @@ def submit_to_agent(input_text, username, show_details, history):
     history.append((input_text, agent_response))
     return "", history  # Return empty string to clear input box
 
-def update_todo(todo_item):
-    add_todo_item(todo_item)
-    return get_todo_list()
+def update_todo(todo_item, group_name, group_agent_id):
+    updated_todo = add_todo_item(todo_item, group_name, group_agent_id)
+    return updated_todo
 
 def update_bulletin(new_item, group_name, group_agent_id):
     updated_bulletin = create_or_update_group_bulletin(group_name, group_agent_id, new_item)
@@ -103,9 +103,9 @@ with gr.Blocks() as demo:
         
         with gr.Row():
             with gr.Column(scale=1):
-                todo_list = gr.Textbox(label="Family To-Do List", value=get_todo_list(), lines=10)
+                todo_list = gr.Markdown(label="Family To-Do List", value="")
                 todo_input = gr.Textbox(label="Add Todo Item")
-                todo_button = gr.Button("Add Todo")
+                todo_button = gr.Button("Update To-Do List")
 
             with gr.Column(scale=2):
                 with gr.Row():
@@ -150,7 +150,11 @@ with gr.Blocks() as demo:
             inputs=[input_box, current_user, show_details, chat_history], 
             outputs=[input_box, agent_responses]
         )
-        todo_button.click(update_todo, todo_input, todo_list)
+        todo_button.click(
+            update_todo,
+            inputs=[todo_input, user_group, group_agent_id],
+            outputs=todo_list
+        )
         update_bulletin_button.click(
             update_bulletin,
             inputs=[bulletin_input, user_group, group_agent_id],
@@ -167,6 +171,13 @@ with gr.Blocks() as demo:
             lambda group, agent_id: f"## {group} Bulletin Board\n\n{create_or_update_group_bulletin(group, agent_id)}" if group and agent_id else "",
             inputs=[user_group, group_agent_id],
             outputs=bulletin_board
+        )
+
+        # Update todo list on login
+        login_button.click(
+            lambda group, agent_id: f"## {group} To-Do List\n\n{get_todo_list(group, agent_id)}" if group and agent_id else "",
+            inputs=[user_group, group_agent_id],
+            outputs=todo_list
         )
 
 demo.launch(share=True)
