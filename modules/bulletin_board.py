@@ -1,4 +1,5 @@
 from modules.user_management import get_group_members, get_comprehensive_agent_data, letta_client
+from modules.group_data_storage import save_group_data, load_group_data
 from datetime import datetime, timedelta
 from letta.schemas.message import MessageRole
 import json
@@ -12,6 +13,11 @@ load_dotenv()
 def create_or_update_group_bulletin(group_name, group_agent_id, new_item=None):
     members = get_group_members(group_name)
     bulletin_content = f"Group Bulletin Board for {group_name}\n\n"
+
+    # Load existing bulletin
+    existing_bulletin = load_group_data(group_name, "bulletin")
+    if existing_bulletin:
+        bulletin_content += "Existing bulletin content:\n" + existing_bulletin + "\n\n"
 
     # Get data for the last 7 days
     # TODO: Fix function calls to get proper date range
@@ -63,17 +69,25 @@ def create_or_update_group_bulletin(group_name, group_agent_id, new_item=None):
     if new_item:
         bulletin_content += f"\nNew item to be added: {new_item}\n"
 
-    # Use OpenAI's GPT-4 to create or update the bulletin board
+    # Use OpenAI's GPT-4o-mini to update the bulletin board
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant tasked with creating a concise and informative bulletin board for a group."},
-            {"role": "user", "content": f"Based on the following information about group members and any new item, create a concise and informative bulletin board for the group. Follow these guidelines:\n\n1. Limit to 2 items per user\n2. Balance the content between users so that they get roughly equal amounts of items\n3. If there's a new item, make sure to incorporate it prominently\n4. Prioritize recent and important information\n\nHere's the content to work with:\n\n{bulletin_content}"}
+            {"role": "system", "content": "You are a helpful assistant tasked with updating a concise and informative bulletin board for a group."},
+            {"role": "user", "content": f"Based on the following information about group members, existing bulletin content, and any new item, update the bulletin board for the group. Follow these guidelines:\n\n1. Limit to 2 items per user\n2. Balance the content between users so that they get roughly equal amounts of items\n3. If there's a new item, make sure to incorporate it prominently\n4. Prioritize recent and important information\n5. Only add or remove items if necessary based on the recent information\n6. Use emojis to make the content more engaging\n7. Use a single newline character to separate each user's content\n8. Return just the content, with no other text\n\nHere's the content to work with:\n\n{bulletin_content}"}
         ]
     )
 
-    return response.choices[0].message.content
+    updated_bulletin = response.choices[0].message.content
+
+    # Save the updated bulletin
+    save_group_data(group_name, "bulletin", updated_bulletin)
+
+    return updated_bulletin
 
 def get_bulletin_board(group_name, group_agent_id):
+    existing_bulletin = load_group_data(group_name, "bulletin")
+    if existing_bulletin:
+        return existing_bulletin
     return create_or_update_group_bulletin(group_name, group_agent_id)

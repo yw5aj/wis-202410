@@ -1,4 +1,5 @@
 from modules.user_management import get_group_members, get_comprehensive_agent_data, letta_client
+from modules.group_data_storage import save_group_data, load_group_data
 from datetime import datetime, timedelta
 from letta.schemas.message import MessageRole
 import json
@@ -13,7 +14,15 @@ def create_or_update_todo_list(group_name, group_agent_id, new_item=None):
     members = get_group_members(group_name)
     todo_content = f"To-Do List for {group_name}\n\n"
 
+    # Load existing todo list
+    existing_todo = load_group_data(group_name, "todo")
+    if existing_todo:
+        todo_content += "Existing todo items:\n" + existing_todo + "\n\n"
+
     # Get data for the last 7 days
+    # TODO: Fix function calls to get proper date range
+    # end_date = datetime.now()
+    # start_date = end_date - timedelta(days=7)
     end_date = None
     start_date = None
 
@@ -49,26 +58,32 @@ def create_or_update_todo_list(group_name, group_agent_id, new_item=None):
     if new_item:
         todo_content += f"\nNew item to be added: {new_item}\n"
 
-    # Use OpenAI's GPT-4 to create or update the todo list
+    # Use OpenAI's GPT-4o-mini to update the todo list
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant tasked with creating and managing a to-do list for a group."},
-            {"role": "user", "content": f"Based on the following information about group members and any new item, create a concise and organized to-do list for the group. The list should contain no more than 10 items total. If there's a new item, make sure to incorporate it. Prioritize the most important and urgent tasks. Format each item as a Markdown checkbox, like this: '- [ ] Task description'. Group similar tasks together:\n\n{todo_content}"}
+            {"role": "system", "content": "You are a helpful assistant tasked with updating a to-do list for a group."},
+            {"role": "user", "content": f"Based on the following information about group members, existing todo items, and any new item, update the to-do list for the group. Return just the list, with no other text. The list should contain no more than 10 items total. If there's a new item, make sure to incorporate it. Prioritize the most important and urgent tasks. Format each item as a Markdown checkbox, like this: '- [ ] Task description'. Group similar tasks together. Only add or remove items if necessary based on the recent information:\n\n{todo_content}"}
         ]
     )
 
-    todo_list = response.choices[0].message.content
+    updated_todo = response.choices[0].message.content
     
     # Ensure the todo list starts with a header
-    if not todo_list.startswith("##"):
-        todo_list = f"## To-Do List for {group_name}\n\n" + todo_list
+    if not updated_todo.startswith("##"):
+        updated_todo = f"## To-Do List for {group_name}\n\n" + updated_todo
 
-    return todo_list
+    # Save the updated todo list
+    save_group_data(group_name, "todo", updated_todo)
+
+    return updated_todo
 
 def add_todo_item(item, group_name, group_agent_id):
     return create_or_update_todo_list(group_name, group_agent_id, new_item=item)
 
 def get_todo_list(group_name, group_agent_id):
+    existing_todo = load_group_data(group_name, "todo")
+    if existing_todo:
+        return existing_todo
     return create_or_update_todo_list(group_name, group_agent_id)
