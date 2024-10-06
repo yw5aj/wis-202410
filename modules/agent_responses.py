@@ -26,11 +26,12 @@ def get_agent_advice(username, detailed=False):
 
 def process_agent_messages(messages, detailed=False):
     result = []
-    agent_response = None
+    agent_responses = []
     for message in messages:
         if hasattr(message, 'function_call') and message.function_call.name == 'send_message':
             arguments = json.loads(message.function_call.arguments)
             agent_response = f"🤖 Agent: {arguments['message']}"
+            agent_responses.append(agent_response)
             if detailed:
                 result.append(agent_response)
         elif detailed:
@@ -44,4 +45,4 @@ def process_agent_messages(messages, detailed=False):
     if detailed:
         return "\n".join(result) if result else "No relevant messages found in the response"
     else:
-        return agent_response if agent_response else "No agent response found"
+        return "\n".join(agent_responses) if agent_responses else "No agent responses found"

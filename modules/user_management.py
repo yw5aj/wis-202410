@@ -1,8 +1,13 @@
 import json
 from pathlib import Path
 from letta import create_client
-from letta.schemas.memory import ChatMemory
+from letta.schemas.memory import ChatMemory, Memory, ArchivalMemorySummary, RecallMemorySummary
+from letta.schemas.message import Message
+from letta.schemas.passage import Passage
+from typing import List, Optional
+from datetime import datetime
 import uuid  # Add this import at the top of the file
+import pytz  # Add this import at the top of the file
 
 USERS_FILE = Path("users.json")
 GROUPS_FILE = Path("groups.json")
@@ -170,3 +175,47 @@ def login(username, password):
             ensure_group_agent_exists(group)
         return True
     return False
+
+def get_group_members(group_name):
+    groups = load_groups()
+    users = load_users()
+    if group_name in groups:
+        return {username: users[username]['agent_id'] for username in groups[group_name]['members']}
+    return {}
+
+def get_agent_memories(agent_id: str):
+    in_context_memory = letta_client.get_in_context_memory(agent_id)
+    archival_memory_summary = letta_client.get_archival_memory_summary(agent_id)
+    recall_memory_summary = letta_client.get_recall_memory_summary(agent_id)
+    return in_context_memory, archival_memory_summary, recall_memory_summary
+
+def format_datetime(dt: datetime) -> str:
+    pacific_tz = pytz.timezone('US/Pacific')
+    localized_dt = dt.astimezone(pacific_tz)
+    return localized_dt.strftime("%Y-%m-%d %I:%M:%S %p %Z%z")
+
+def get_messages_by_date_range(agent_id: str, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None, limit: Optional[int] = 1000) -> List[Message]:
+    start_str = format_datetime(start_date) if start_date else None
+    end_str = format_datetime(end_date) if end_date else None
+    return letta_client.get_messages(agent_id, after=start_str, before=end_str, limit=limit)
+
+def get_archival_memory_by_date_range(agent_id: str, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None, limit: Optional[int] = 1000) -> List[Passage]:
+    start_str = format_datetime(start_date) if start_date else None
+    end_str = format_datetime(end_date) if end_date else None
+    return letta_client.get_archival_memory(agent_id, after=start_str, before=end_str, limit=limit)
+
+def get_comprehensive_agent_data(agent_id: str, start_date: Optional[datetime] = None, end_date: Optional[datetime] = None):
+    in_context_memory, archival_memory_summary, recall_memory_summary = get_agent_memories(agent_id)
+    
+    messages = get_messages_by_date_range(agent_id, start_date, end_date)
+    archival_memory_passages = get_archival_memory_by_date_range(agent_id, start_date, end_date)
+    
+    return {
+        'memory_summaries': {
+            'in_context_memory': in_context_memory,
+            'archival_memory_summary': archival_memory_summary,
+            'recall_memory_summary': recall_memory_summary
+        },
+        'messages': messages,
+        'archival_memory_passages': archival_memory_passages
+    }

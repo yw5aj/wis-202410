@@ -2,7 +2,7 @@ import gradio as gr
 from modules.voice_processing import process_voice_input
 from modules.image_processing import summarize_image
 from modules.todo_list import add_todo_item, get_todo_list
-from modules.bulletin_board import add_bulletin_item, get_bulletin_board
+from modules.bulletin_board import get_bulletin_board, create_or_update_group_bulletin
 from modules.agent_responses import get_agent_response, get_agent_advice
 from modules.user_management import authenticate, register_user, get_user_data, get_user_group, get_group_agent_id, ensure_group_agent_exists, load_users
 
@@ -46,9 +46,12 @@ def update_todo(todo_item):
     add_todo_item(todo_item)
     return get_todo_list()
 
-def update_bulletin(bulletin_item):
-    add_bulletin_item(bulletin_item)
-    return get_bulletin_board()
+def update_bulletin(new_item, group_name, group_agent_id):
+    updated_bulletin = create_or_update_group_bulletin(group_name, group_agent_id, new_item)
+    return updated_bulletin
+
+def refresh_bulletin(group_name, group_agent_id):
+    return create_or_update_group_bulletin(group_name, group_agent_id)
 
 def request_advice(username, show_details, history):
     advice = get_agent_advice(username, detailed=show_details)
@@ -118,10 +121,10 @@ with gr.Blocks() as demo:
                     submit_button = gr.Button("Submit to Agent")
 
             with gr.Column(scale=1):
-                bulletin_board = gr.Textbox(label="Family Bulletin Board", value=get_bulletin_board(), lines=10)
-                bulletin_input = gr.Textbox(label="Add Bulletin Item")
-                bulletin_button = gr.Button("Add Bulletin")
-        
+                bulletin_board = gr.Markdown(label="Family Bulletin Board", value="")
+                bulletin_input = gr.Textbox(label="New Bulletin Item (optional)")
+                update_bulletin_button = gr.Button("Update Bulletin Board")
+
         agent_responses = gr.Chatbot(label="Conversation History")
         advice_button = gr.Button("Any advice?")
 
@@ -148,11 +151,22 @@ with gr.Blocks() as demo:
             outputs=[input_box, agent_responses]
         )
         todo_button.click(update_todo, todo_input, todo_list)
-        bulletin_button.click(update_bulletin, bulletin_input, bulletin_board)
+        update_bulletin_button.click(
+            update_bulletin,
+            inputs=[bulletin_input, user_group, group_agent_id],
+            outputs=bulletin_board
+        )
         advice_button.click(request_advice, inputs=[current_user, show_details, chat_history], outputs=agent_responses)
         
         # Connect login components
         login_button.click(login, inputs=[username_input, password_input], outputs=[login_output, user_data, current_user, user_group, group_agent_id])
         register_button.click(register, inputs=[username_input, password_input, group_input], outputs=login_output)
+
+        # Update bulletin board on login
+        login_button.click(
+            lambda group, agent_id: f"## {group} Bulletin Board\n\n{create_or_update_group_bulletin(group, agent_id)}" if group and agent_id else "",
+            inputs=[user_group, group_agent_id],
+            outputs=bulletin_board
+        )
 
 demo.launch(share=True)
